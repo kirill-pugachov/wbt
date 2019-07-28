@@ -8,6 +8,7 @@ Created on Sun Jul 28 09:36:30 2019
 import configparser
 import shelve
 import logging
+import json
 
 
 config = configparser.ConfigParser()
@@ -17,6 +18,7 @@ SHELVE_NAME = config.get('Section_0', 'SHELVE_NAME')
 LOG_FILENAME = config.get('Section_0', 'LOG_FILENAME')
 
 logging.basicConfig(filename=LOG_FILENAME, level=logging.DEBUG, format='%(asctime)s - %(name)s - %(threadName)s -  %(levelname)s - %(message)s')
+
 
 def get_country_list(shelve_name):
     '''
@@ -129,11 +131,36 @@ def delete_country_year_data(shelve_name, country, year):
         logging.error('Error {} occured while deleting country data {} by year {}'.format(e, country, year))
         return None
 
-
+def save_data_to_file(shelve_name, file_name):
+    res_dict = dict()
+    try:
+        db = shelve.open(shelve_name)
+        a = list(db.keys())
+    except Exception as e:
+        logging.error('Error {} occured while getting data from shelve by key {}'.format(e, shelve_name))
+        return None
+    if a:
+        try:
+            for country in a:
+                res_dict.update({country: db[country]})
+        except Exception as ex:
+            logging.error('Error {} occured while getting data from shelve by key {}'.format(ex, country))
+            return None
+    else:
+        logging.info('No data in country ID list')
+        return None
+    try:    
+        with open(file_name, 'w') as fp:
+            json.dump(res_dict, fp)
+    except Exception as exc:
+        logging.error('Error {} occured while saving data to file {} from shelve by key {}'.format(exc, file_name, country))
+        
+        
 if __name__ == '__main__':
     
     country_list = get_country_list(SHELVE_NAME)
     one_country_data = get_country_data(SHELVE_NAME, country_list[0])
     one_country_year_list = get_country_year_list(SHELVE_NAME, country_list[0])
     one_country_one_year_data = get_data_by_country_year(SHELVE_NAME, country_list[0], one_country_year_list[7])
+    save_data_to_file(SHELVE_NAME, 'wb_res_data.json')
     
